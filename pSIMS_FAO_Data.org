@@ -54,7 +54,6 @@ Here are the first few files:
 #+RESULTS:
 | Shapefiles/R Data/Angola/AGO_adm1.RData                      |
 | Shapefiles/R Data/Benin/BEN_adm1.RData                       |
-| Shapefiles/R Data/Burkina Faso/BFA_adm0.RData                |
 | Shapefiles/R Data/Burkina Faso/BFA_adm1.RData                |
 | Shapefiles/R Data/Burkina Faso/BFA_adm2.RData                |
 | Shapefiles/R Data/Burundi/BDI_adm1.RData                     |
@@ -65,7 +64,6 @@ Here are the first few files:
 | Shapefiles/R Data/Ghana/GHA_adm1.RData                       |
 | Shapefiles/R Data/Guinea-Bissau/GNB_adm1.RData               |
 | Shapefiles/R Data/Kenya/KEN_adm1.RData                       |
-| Shapefiles/R Data/Malawi/MWI_adm0.RData                      |
 | Shapefiles/R Data/Malawi/MWI_adm1.RData                      |
 | Shapefiles/R Data/Malawi/MWI_adm2.RData                      |
 | Shapefiles/R Data/Malawi/MWI_adm3.RData                      |
@@ -109,7 +107,6 @@ colnames( gadmFileSummary) <-
  | AGO | Shapefiles/R Data/Angola/AGO_adm1.RData                      |   1 |
  | BDI | Shapefiles/R Data/Burundi/BDI_adm1.RData                     |   1 |
  | BEN | Shapefiles/R Data/Benin/BEN_adm1.RData                       |   1 |
- | BFA | Shapefiles/R Data/Burkina Faso/BFA_adm0.RData                |   0 |
  | BFA | Shapefiles/R Data/Burkina Faso/BFA_adm1.RData                |   1 |
  | BFA | Shapefiles/R Data/Burkina Faso/BFA_adm2.RData                |   2 |
  | CIV | Shapefiles/R Data/Côte d'Ivoire/CIV_adm1.RData               |   1 |
@@ -121,7 +118,6 @@ colnames( gadmFileSummary) <-
  | KEN | Shapefiles/R Data/Kenya/KEN_adm1.RData                       |   1 |
  | MLI | Shapefiles/R Data/Mali/MLI_adm1.RData                        |   1 |
  | MOZ | Shapefiles/R Data/Mozambique/MOZ_adm1.RData                  |   1 |
- | MWI | Shapefiles/R Data/Malawi/MWI_adm0.RData                      |   0 |
  | MWI | Shapefiles/R Data/Malawi/MWI_adm1.RData                      |   1 |
  | MWI | Shapefiles/R Data/Malawi/MWI_adm2.RData                      |   2 |
  | MWI | Shapefiles/R Data/Malawi/MWI_adm3.RData                      |   3 |
@@ -134,7 +130,7 @@ colnames( gadmFileSummary) <-
 #+END_SRC
 
 
-** Select the highest administrative level for each country
+** Select the highest administrative level for each country	   :noexport:
 
 =ddply()= takes in a data frame, breaks it up by the value(s)
 indicated by the =.variables= argument, processes each chunk using an
@@ -143,7 +139,7 @@ anonynous function and reassembles the results into a new data frame.
 The anonymous function says "return the row with the maximum value of
 =adm=, but only the =iso= and =fn= columns."
 
-#+BEGIN_SRC R
+#+BEGIN_SRC R :tangle no
   highestPerCountry <- ddply(
     .data= gadmFileSummary,
     .variables= .(iso),
@@ -153,6 +149,9 @@ The anonymous function says "return the row with the maximum value of
         df[ adm == max( adm),
            c( "iso", "fn")])})
 #+END_SRC
+
+
+*** TODO Delete this section if no longer needed
 
 
 ** Extract the names and write them out
@@ -168,48 +167,108 @@ want.  Higher administrative levels have more colums, but =ldply()=
 takes care of creating empty columns when assembling the final result.
 
 #+BEGIN_SRC R
-gadmNames <- ldply(
-  .data= highestPerCountry$fn,
-  .fun= function( fn) {
-    load( fn)
-    cols <- c(
-      "ISO",
-      colnames( gadm@data)[ str_detect( colnames( gadm@data), "^(VAR)*NAME")])
-    gadm@data[ , cols]})
-
-write.csv(
-  gadmNames,
-  file= "gadmNames.csv",
-  row.names= FALSE,
-  fileEncoding = "UTF-16LE")
+  gadmNames <- ldply(
+    .data= gadmFileSummary$fn,
+    .fun= function( fn) {
+      load( fn)
+      cols <- c(
+        "ISO",
+        colnames( gadm@data)[ str_detect( colnames( gadm@data), "^(VAR)*NAME")])
+      df <- gadm@data[ , cols]
+      colnames( df)[ str_detect( colnames( df), "^VARNAME")] <-
+          "VARNAME"
+      df})
+  
+  write.csv(
+    gadmNames[, c( "ISO", "NAME_0", "NAME_1", "NAME_2", "NAME_3", "VARNAME")],
+    file= "gadmNames.csv",
+    row.names= FALSE,
+    na= ""
+    ##, fileEncoding = "UTF-16LE"
+      )
 #+END_SRC
 
 
-** Check the results
+*** TODO Verify that the data loads correctly on Windows
 
-I suspect that I made a bad assumption in thinking that higher
-administrative levels would also contain alternate names for the lower
-levels.  Check Malawi since its data goes all the way to level 3.
-
+The encoding indicated by the =write.csv()= man page doesn't seem to
+work properly.
 
 
-*** Examine the first few Malawi records
+** Check the results						   :noexport:
+
+The data checks out better this time but these tests are not great.
+
+
+*** TODO Replace empty strings =""= with =NA=
+
+*** TODO write better checks
+
+*** Examine the level 1 Malawi records
+
 
 #+BEGIN_SRC R :results replace output org
-  ascii( head( gadmNames[ gadmNames$ISO == "MWI", ]), include.rownames= FALSE)
+  ascii(
+      gadmNames[ gadmNames$ISO == "MWI" & is.na(gadmNames$NAME_2),
+                      c( 1, 2, 3, 5, 6, 4)],
+      include.rownames= FALSE)
 #+END_SRC
 
 #+RESULTS:
 #+BEGIN_SRC org
-| ISO | NAME_0 | NAME_1  | VARNAME_1 | NAME_2     | VARNAME_2 | NAME_3     | VARNAME_3 |
-|-----+--------+---------+-----------+------------+-----------+------------+-----------|
-| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (76)  |           |
-| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (79)  |           |
-| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (82)  |           |
-| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (83)  |           |
-| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (84)  |           |
-| MWI | Malawi | Karonga |           | TA Wasambo |           | n.a. (100) |           |
+ | ISO | NAME_0 | NAME_1     | NAME_2 | NAME_3 | VARNAME                           |
+ |-----+--------+------------+--------+--------+-----------------------------------|
+ | MWI | Malawi | Mangochi   |        |        | Mangoche \vert Fort Johnston      |
+ | MWI | Malawi | Mchinji    |        |        | Fort Manning                      |
+ | MWI | Malawi | Mulanje    |        |        | Mlange \vert Mlanje               |
+ | MWI | Malawi | Mwanza     |        |        |                                   |
+ | MWI | Malawi | Mzimba     |        |        |                                   |
+ | MWI | Malawi | Nkhata Bay |        |        | Chinteche                         |
+ | MWI | Malawi | Nkhotakota |        |        | Kota Kota                         |
+ | MWI | Malawi | Nsanje     |        |        | Port Herald                       |
+ | MWI | Malawi | Ntcheu     |        |        | Ncheu                             |
+ | MWI | Malawi | Ntchisi    |        |        | Nchisi                            |
+ | MWI | Malawi | Phalombe   |        |        |                                   |
+ | MWI | Malawi | Rumphi     |        |        | Rumpi                             |
+ | MWI | Malawi | Salima     |        |        |                                   |
+ | MWI | Malawi | Thyolo     |        |        | Cholo                             |
+ | MWI | Malawi | Zomba      |        |        |                                   |
+ | MWI | Malawi | Balaka     |        |        |                                   |
+ | MWI | Malawi | Blantyre   |        |        |                                   |
+ | MWI | Malawi | Chikwawa   |        |        |                                   |
+ | MWI | Malawi | Chiradzulu |        |        |                                   |
+ | MWI | Malawi | Chitipa    |        |        |                                   |
+ | MWI | Malawi | Dedza      |        |        |                                   |
+ | MWI | Malawi | Dowa       |        |        |                                   |
+ | MWI | Malawi | Karonga    |        |        |                                   |
+ | MWI | Malawi | Kasungu    |        |        |                                   |
+ | MWI | Malawi | Lilongwe   |        |        |                                   |
+ | MWI | Malawi | Machinga   |        |        | Kasupe \vert Kasupi \vert Liwonde |
 #+END_SRC
+
+
+*** Examine the first few level 2 Malawi records
+
+
+#+BEGIN_SRC R :results replace output org
+  ascii(
+      head( gadmNames[ gadmNames$ISO == "MWI" & is.na(gadmNames$NAME_3),
+                      c( 1, 2, 3, 5, 6, 4)]),
+      include.rownames= FALSE)
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_SRC org
+ | ISO | NAME_0 | NAME_1     | NAME_2 | NAME_3 | VARNAME                      |
+ |-----+--------+------------+--------+--------+------------------------------|
+ | MWI | Malawi | Mangochi   |        |        | Mangoche \vert Fort Johnston |
+ | MWI | Malawi | Mchinji    |        |        | Fort Manning                 |
+ | MWI | Malawi | Mulanje    |        |        | Mlange \vert Mlanje          |
+ | MWI | Malawi | Mwanza     |        |        |                              |
+ | MWI | Malawi | Mzimba     |        |        |                              |
+ | MWI | Malawi | Nkhata Bay |        |        | Chinteche                    |
+#+END_SRC
+
 
 
 *** Count the Malawi records
@@ -219,59 +278,33 @@ levels.  Check Malawi since its data goes all the way to level 3.
 #+END_SRC
 
 #+RESULTS:
-: 3123
+: 3402
 
 
 *** Count the Malawi records with alternate names for level 1
 
+
 #+BEGIN_SRC R :results replace
-  nrow( gadmNames[ gadmNames$ISO == "MWI" & !is.na( gadmNames$VARNAME_1), ])
+    nrow( gadmNames[ gadmNames$ISO == "MWI"
+                    & is.na( gadmNames$NAME_2)
+                    & gadmNames$VARNAME != "", ])
 #+END_SRC
 
 #+RESULTS:
-: 0
+: 11
 
-This data comes from the level 3 data file for Malawi
+*** Count the Malawi records with alternate names for level 2
 
 
-*** Go directly to the Malawi level 1 data file
-
-#+BEGIN_SRC R :results replace output org
-  load( "Shapefiles/R Data/Malawi/MWI_adm1.RData")
-  ascii( gadm@data[, c( "NAME_1", "VARNAME_1")], include.rownames= FALSE)
+#+BEGIN_SRC R :results replace
+    nrow( gadmNames[ gadmNames$ISO == "MWI"
+                    & is.na( gadmNames$NAME_3)
+                    & gadmNames$VARNAME != "", ])
 #+END_SRC
 
 #+RESULTS:
-#+BEGIN_SRC org
-| NAME_1     | VARNAME_1                         |
-|------------+-----------------------------------|
-| Mangochi   | Mangoche \vert Fort Johnston      |
-| Mchinji    | Fort Manning                      |
-| Mulanje    | Mlange \vert Mlanje               |
-| Mwanza     |                                   |
-| Mzimba     |                                   |
-| Nkhata Bay | Chinteche                         |
-| Nkhotakota | Kota Kota                         |
-| Nsanje     | Port Herald                       |
-| Ntcheu     | Ncheu                             |
-| Ntchisi    | Nchisi                            |
-| Phalombe   |                                   |
-| Rumphi     | Rumpi                             |
-| Salima     |                                   |
-| Thyolo     | Cholo                             |
-| Zomba      |                                   |
-| Balaka     |                                   |
-| Blantyre   |                                   |
-| Chikwawa   |                                   |
-| Chiradzulu |                                   |
-| Chitipa    |                                   |
-| Dedza      |                                   |
-| Dowa       |                                   |
-| Karonga    |                                   |
-| Kasungu    |                                   |
-| Lilongwe   |                                   |
-| Machinga   | Kasupe \vert Kasupi \vert Liwonde |
-#+END_SRC
+: 11
 
-Clearly the assumption above that the highest level data would be
-adequate is not valid.
+
+
+
