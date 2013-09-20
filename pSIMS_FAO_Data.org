@@ -1,0 +1,277 @@
+#+TITLE: Clean and Organize Africa FAO Data for pSIMS
+
+#+PROPERTY: session *R*
+#+PROPERTY: results silent
+
+* Write out all place names from GADM
+  :PROPERTIES:
+  :tangle:   writeGadmNames.R
+  :END:
+
+
+** Load libraries
+
+=plyr= provides functions for the "split-apply-combine" approach to
+data processing.  See [[http://plyr.had.co.nz/]] and
+[[http://www.jstatsoft.org/v40/i01]].
+
+=stringr= provides functions for character processing that are more
+convenient and uniform than those provided in base R.  See
+[[http://cran.r-project.org/web/packages/stringr/index.html]].
+
+#+BEGIN_SRC R
+  library( plyr)
+  library( stringr)
+  library( ascii)
+  options( asciiType= "org")
+#+END_SRC
+
+
+** TODO Automate the download					   :noexport:
+
+Maybe/someday
+
+
+** Make a list of the =.RData= files that we downloaded
+
+The download was done by hand from [[www.gadm.org]].  The =.RData= files
+have the place names properly encoded with diacritical marks and
+alternate spellings.
+
+#+BEGIN_SRC R
+gadmFiles <- list.files(
+  path= "Shapefiles/R Data",
+  recursive= TRUE,
+  full.names= TRUE)
+#+END_SRC
+
+Here are the first few files:
+
+#+BEGIN_SRC R :tangle no :results replace 
+  gadmFiles
+#+END_SRC
+
+#+RESULTS:
+| Shapefiles/R Data/Angola/AGO_adm1.RData                      |
+| Shapefiles/R Data/Benin/BEN_adm1.RData                       |
+| Shapefiles/R Data/Burkina Faso/BFA_adm0.RData                |
+| Shapefiles/R Data/Burkina Faso/BFA_adm1.RData                |
+| Shapefiles/R Data/Burkina Faso/BFA_adm2.RData                |
+| Shapefiles/R Data/Burundi/BDI_adm1.RData                     |
+| Shapefiles/R Data/Cameroon/CMR_adm1.RData                    |
+| Shapefiles/R Data/Côte d'Ivoire/CIV_adm1.RData               |
+| Shapefiles/R Data/Ethiopia/ETH_adm1.RData                    |
+| Shapefiles/R Data/Gambia/GMB_adm1.RData                      |
+| Shapefiles/R Data/Ghana/GHA_adm1.RData                       |
+| Shapefiles/R Data/Guinea-Bissau/GNB_adm1.RData               |
+| Shapefiles/R Data/Kenya/KEN_adm1.RData                       |
+| Shapefiles/R Data/Malawi/MWI_adm0.RData                      |
+| Shapefiles/R Data/Malawi/MWI_adm1.RData                      |
+| Shapefiles/R Data/Malawi/MWI_adm2.RData                      |
+| Shapefiles/R Data/Malawi/MWI_adm3.RData                      |
+| Shapefiles/R Data/Mali/MLI_adm1.RData                        |
+| Shapefiles/R Data/Mozambique/MOZ_adm1.RData                  |
+| Shapefiles/R Data/Niger/NER_adm1.RData                       |
+| Shapefiles/R Data/Nigeria/NGA_adm1.RData                     |
+| Shapefiles/R Data/Rawanda/RWA_adm1.RData                     |
+| Shapefiles/R Data/Togo/TGO_adm1.RData                        |
+| Shapefiles/R Data/United Republic of Tanzania/TZA_adm1.RData |
+| Shapefiles/R Data/Zambia/ZMB_adm1.RData                      |
+
+
+** Extract the ISO codes and adminstrative levels
+
+We only need the data from the highest level inidicated by the FAO
+data.  In order to do this we need to extract some variables from the
+file names into a new data frame.
+
+#+BEGIN_SRC R
+gadmFileSummary <- data.frame(
+  str_match(
+    gadmFiles,
+    "^.*([A-Z]{3})_adm([0-3])\\.RData$"),
+  stringsAsFactors= FALSE)
+
+colnames( gadmFileSummary) <-
+  c( "fn", "iso", "adm")
+#+END_SRC
+
+#+BEGIN_SRC R :tangle no :results replace output org
+  ascii(
+    gadmFileSummary[ order( gadmFileSummary$iso), c( 2, 1, 3)],
+    include.rownames= FALSE)
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_SRC org
+ | iso | fn                                                           | adm |
+ |-----+--------------------------------------------------------------+-----|
+ | AGO | Shapefiles/R Data/Angola/AGO_adm1.RData                      |   1 |
+ | BDI | Shapefiles/R Data/Burundi/BDI_adm1.RData                     |   1 |
+ | BEN | Shapefiles/R Data/Benin/BEN_adm1.RData                       |   1 |
+ | BFA | Shapefiles/R Data/Burkina Faso/BFA_adm0.RData                |   0 |
+ | BFA | Shapefiles/R Data/Burkina Faso/BFA_adm1.RData                |   1 |
+ | BFA | Shapefiles/R Data/Burkina Faso/BFA_adm2.RData                |   2 |
+ | CIV | Shapefiles/R Data/Côte d'Ivoire/CIV_adm1.RData               |   1 |
+ | CMR | Shapefiles/R Data/Cameroon/CMR_adm1.RData                    |   1 |
+ | ETH | Shapefiles/R Data/Ethiopia/ETH_adm1.RData                    |   1 |
+ | GHA | Shapefiles/R Data/Ghana/GHA_adm1.RData                       |   1 |
+ | GMB | Shapefiles/R Data/Gambia/GMB_adm1.RData                      |   1 |
+ | GNB | Shapefiles/R Data/Guinea-Bissau/GNB_adm1.RData               |   1 |
+ | KEN | Shapefiles/R Data/Kenya/KEN_adm1.RData                       |   1 |
+ | MLI | Shapefiles/R Data/Mali/MLI_adm1.RData                        |   1 |
+ | MOZ | Shapefiles/R Data/Mozambique/MOZ_adm1.RData                  |   1 |
+ | MWI | Shapefiles/R Data/Malawi/MWI_adm0.RData                      |   0 |
+ | MWI | Shapefiles/R Data/Malawi/MWI_adm1.RData                      |   1 |
+ | MWI | Shapefiles/R Data/Malawi/MWI_adm2.RData                      |   2 |
+ | MWI | Shapefiles/R Data/Malawi/MWI_adm3.RData                      |   3 |
+ | NER | Shapefiles/R Data/Niger/NER_adm1.RData                       |   1 |
+ | NGA | Shapefiles/R Data/Nigeria/NGA_adm1.RData                     |   1 |
+ | RWA | Shapefiles/R Data/Rawanda/RWA_adm1.RData                     |   1 |
+ | TGO | Shapefiles/R Data/Togo/TGO_adm1.RData                        |   1 |
+ | TZA | Shapefiles/R Data/United Republic of Tanzania/TZA_adm1.RData |   1 |
+ | ZMB | Shapefiles/R Data/Zambia/ZMB_adm1.RData                      |   1 |
+#+END_SRC
+
+
+** Select the highest administrative level for each country
+
+=ddply()= takes in a data frame, breaks it up by the value(s)
+indicated by the =.variables= argument, processes each chunk using an
+anonynous function and reassembles the results into a new data frame.
+
+The anonymous function says "return the row with the maximum value of
+=adm=, but only the =iso= and =fn= columns."
+
+#+BEGIN_SRC R
+  highestPerCountry <- ddply(
+    .data= gadmFileSummary,
+    .variables= .(iso),
+    .fun= function( df) {
+      with(
+        df,
+        df[ adm == max( adm),
+           c( "iso", "fn")])})
+#+END_SRC
+
+
+** Extract the names and write them out
+
+Iterate over the subset of files and grab the place names and alternate
+place names for all levels from the attribute data of each file.  The
+=load()= function would normally redefine the value of the symbol
+=gadm= in the global environment but because we are evaluating it
+within the body of the function =gadm= goes out of scope at the end
+of each call to the anonymous function and disappears.  The function
+returns a data frame with only the columns that contain names that we
+want.  Higher administrative levels have more colums, but =ldply()=
+takes care of creating empty columns when assembling the final result.
+
+#+BEGIN_SRC R
+gadmNames <- ldply(
+  .data= highestPerCountry$fn,
+  .fun= function( fn) {
+    load( fn)
+    cols <- c(
+      "ISO",
+      colnames( gadm@data)[ str_detect( colnames( gadm@data), "^(VAR)*NAME")])
+    gadm@data[ , cols]})
+
+write.csv(
+  gadmNames,
+  file= "gadmNames.csv",
+  row.names= FALSE,
+  fileEncoding = "UTF-16LE")
+#+END_SRC
+
+
+** Check the results
+
+I suspect that I made a bad assumption in thinking that higher
+administrative levels would also contain alternate names for the lower
+levels.  Check Malawi since its data goes all the way to level 3.
+
+
+
+*** Examine the first few Malawi records
+
+#+BEGIN_SRC R :results replace output org
+  ascii( head( gadmNames[ gadmNames$ISO == "MWI", ]), include.rownames= FALSE)
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_SRC org
+| ISO | NAME_0 | NAME_1  | VARNAME_1 | NAME_2     | VARNAME_2 | NAME_3     | VARNAME_3 |
+|-----+--------+---------+-----------+------------+-----------+------------+-----------|
+| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (76)  |           |
+| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (79)  |           |
+| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (82)  |           |
+| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (83)  |           |
+| MWI | Malawi | Karonga |           | TA Kyungu  |           | n.a. (84)  |           |
+| MWI | Malawi | Karonga |           | TA Wasambo |           | n.a. (100) |           |
+#+END_SRC
+
+
+*** Count the Malawi records
+
+#+BEGIN_SRC R :results replace
+  nrow( gadmNames[ gadmNames$ISO == "MWI", ])
+#+END_SRC
+
+#+RESULTS:
+: 3123
+
+
+*** Count the Malawi records with alternate names for level 1
+
+#+BEGIN_SRC R :results replace
+  nrow( gadmNames[ gadmNames$ISO == "MWI" & !is.na( gadmNames$VARNAME_1), ])
+#+END_SRC
+
+#+RESULTS:
+: 0
+
+This data comes from the level 3 data file for Malawi
+
+
+*** Go directly to the Malawi level 1 data file
+
+#+BEGIN_SRC R :results replace output org
+  load( "Shapefiles/R Data/Malawi/MWI_adm1.RData")
+  ascii( gadm@data[, c( "NAME_1", "VARNAME_1")], include.rownames= FALSE)
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_SRC org
+| NAME_1     | VARNAME_1                         |
+|------------+-----------------------------------|
+| Mangochi   | Mangoche \vert Fort Johnston      |
+| Mchinji    | Fort Manning                      |
+| Mulanje    | Mlange \vert Mlanje               |
+| Mwanza     |                                   |
+| Mzimba     |                                   |
+| Nkhata Bay | Chinteche                         |
+| Nkhotakota | Kota Kota                         |
+| Nsanje     | Port Herald                       |
+| Ntcheu     | Ncheu                             |
+| Ntchisi    | Nchisi                            |
+| Phalombe   |                                   |
+| Rumphi     | Rumpi                             |
+| Salima     |                                   |
+| Thyolo     | Cholo                             |
+| Zomba      |                                   |
+| Balaka     |                                   |
+| Blantyre   |                                   |
+| Chikwawa   |                                   |
+| Chiradzulu |                                   |
+| Chitipa    |                                   |
+| Dedza      |                                   |
+| Dowa       |                                   |
+| Karonga    |                                   |
+| Kasungu    |                                   |
+| Lilongwe   |                                   |
+| Machinga   | Kasupe \vert Kasupi \vert Liwonde |
+#+END_SRC
+
+Clearly the assumption above that the highest level data would be
+adequate is not valid.
