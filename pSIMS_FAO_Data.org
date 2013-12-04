@@ -5,7 +5,7 @@
 
 * Write out all place names from GADM
   :PROPERTIES:
-  :tangle:   writeGadmNames.R
+  :tangle:   gadmNames.R
   :END:
 
 
@@ -45,7 +45,7 @@ gadmFiles <- list.files(
   full.names= TRUE)
 #+END_SRC
 
-Here are the first few files:
+Here are the files:
 
 #+BEGIN_SRC R :tangle no :results replace 
   gadmFiles
@@ -65,13 +65,12 @@ Here are the first few files:
 | Shapefiles/R Data/Guinea-Bissau/GNB_adm1.RData               |
 | Shapefiles/R Data/Kenya/KEN_adm1.RData                       |
 | Shapefiles/R Data/Malawi/MWI_adm1.RData                      |
-| Shapefiles/R Data/Malawi/MWI_adm2.RData                      |
-| Shapefiles/R Data/Malawi/MWI_adm3.RData                      |
 | Shapefiles/R Data/Mali/MLI_adm1.RData                        |
 | Shapefiles/R Data/Mozambique/MOZ_adm1.RData                  |
 | Shapefiles/R Data/Niger/NER_adm1.RData                       |
 | Shapefiles/R Data/Nigeria/NGA_adm1.RData                     |
-| Shapefiles/R Data/Rawanda/RWA_adm1.RData                     |
+| Shapefiles/R Data/Rwanda/RWA_adm1.RData                      |
+| Shapefiles/R Data/Rwanda/RWA_adm2.RData                      |
 | Shapefiles/R Data/Togo/TGO_adm1.RData                        |
 | Shapefiles/R Data/United Republic of Tanzania/TZA_adm1.RData |
 | Shapefiles/R Data/Zambia/ZMB_adm1.RData                      |
@@ -119,11 +118,10 @@ colnames( gadmFileSummary) <-
  | MLI | Shapefiles/R Data/Mali/MLI_adm1.RData                        |   1 |
  | MOZ | Shapefiles/R Data/Mozambique/MOZ_adm1.RData                  |   1 |
  | MWI | Shapefiles/R Data/Malawi/MWI_adm1.RData                      |   1 |
- | MWI | Shapefiles/R Data/Malawi/MWI_adm2.RData                      |   2 |
- | MWI | Shapefiles/R Data/Malawi/MWI_adm3.RData                      |   3 |
  | NER | Shapefiles/R Data/Niger/NER_adm1.RData                       |   1 |
  | NGA | Shapefiles/R Data/Nigeria/NGA_adm1.RData                     |   1 |
- | RWA | Shapefiles/R Data/Rawanda/RWA_adm1.RData                     |   1 |
+ | RWA | Shapefiles/R Data/Rwanda/RWA_adm1.RData                      |   1 |
+ | RWA | Shapefiles/R Data/Rwanda/RWA_adm2.RData                      |   2 |
  | TGO | Shapefiles/R Data/Togo/TGO_adm1.RData                        |   1 |
  | TZA | Shapefiles/R Data/United Republic of Tanzania/TZA_adm1.RData |   1 |
  | ZMB | Shapefiles/R Data/Zambia/ZMB_adm1.RData                      |   1 |
@@ -178,9 +176,17 @@ takes care of creating empty columns when assembling the final result.
       colnames( df)[ str_detect( colnames( df), "^VARNAME")] <-
           "VARNAME"
       df})
-  
+
+  ## If a call to write.csv() does not appear immediately below 
+  ## it is because that section of source code was not tangled
+  ## from pSIMS_FAO_Data.org.  We are editing gadmNames.csv by 
+  ## hand for now.
+#+END_SRC  
+
+
+#+BEGIN_SRC R :eval no :tangle no
   write.csv(
-    gadmNames[, c( "ISO", "NAME_0", "NAME_1", "NAME_2", "NAME_3", "VARNAME")],
+    gadmNames[, c( "ISO", "NAME_0", "NAME_1", "NAME_2", "VARNAME")],
     file= "gadmNames.csv",
     row.names= FALSE,
     na= ""
@@ -188,6 +194,35 @@ takes care of creating empty columns when assembling the final result.
       )
 #+END_SRC
 
+We missed around trying to get Windows to recognize the Unicode
+characters, but this doesn't seem quite right.
+
+#+BEGIN_SRC R :eval no :tangle no
+  write.csv(
+    gadmNames[, c( "ISO", "NAME_0", "NAME_1", "NAME_2", "VARNAME")],
+    file= "gadmNames-UTF-16LE.csv",
+    row.names= FALSE,
+    na= "", 
+    fileEncoding = "UTF-16LE")
+  
+#+END_SRC
+
+** Write out names for Rwanda and Malawi separately
+
+#+BEGIN_SRC R
+  write.csv( gadmNames[ gadmNames$ISO == "RWA",
+                       c( "ISO", "NAME_0", "NAME_1", "NAME_2", "VARNAME")],
+      file= "gadmNamesRWA.csv",
+      row.names= FALSE,
+      na= "")
+  
+  write.csv( gadmNames[ gadmNames$ISO == "MWI",
+                       c( "ISO", "NAME_0", "NAME_1", "NAME_2", "VARNAME")],
+      file= "gadmNamesMWI.csv",
+      row.names= FALSE,
+      na= "")
+  
+#+END_SRC
 
 *** TODO Verify that the data loads correctly on Windows
 
@@ -196,6 +231,9 @@ work properly.
 
 
 ** Check the results						   :noexport:
+   :PROPERTIES:
+   :tangle:   no
+   :END:
 
 The data checks out better this time but these tests are not great.
 
