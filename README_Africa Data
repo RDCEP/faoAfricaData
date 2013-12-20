@@ -1,4 +1,4 @@
-faoAfricaData: Using agriculture data of given countries, R scripts can approximate yield numbers for multiple African countries. 
+faoAfricaData: Using agriculture data of given countries, R scripts can approximate yield numbers for multiple African regions. 
 ABOUT
 The faoAfricaData project calculates the yield outputs of countries on the sub-national level. All of the data was extracted from the “CountryStat.org”~ which is the country-specific version of FAOSTAT. 
 The inputs data used to calculate the yield values were the Area Harvested and Production data, which were extracted from the Sub-National Data Base. Location example for Gambia: http://countrystat.org/home.aspx?c=GHA&tr=21. 
