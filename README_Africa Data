@@ -1,0 +1,17 @@
+faoAfricaData: Using agriculture data of given countries, R scripts can approximate yield numbers for multiple African countries. 
+ABOUT
+The faoAfricaData project calculates the yield outputs of countries on the sub-national level. All of the data was extracted from the “CountryStat.org”~ which is the country-specific version of FAOSTAT. 
+The inputs data used to calculate the yield values were the Area Harvested and Production data, which were extracted from the Sub-National Data Base. Location example for Gambia: http://countrystat.org/home.aspx?c=GHA&tr=21. 
+The agriculture units for the Yield values, as noted in the National Core http://countrystat.org/home.aspx?c=GHA&tr=1, are “Production quantity of Primary Crops (tonnes)” divided by “Area Harvested (ha)”. Thus, yield units are (tonnes/ha).
+
+HOW TO USE
+The scripts were written in the R statistical programming language. These packages may need to be installed within R: 
+> install.packages("reshape2")
+> install.packages("stringr")
+> install.packages("plyr")
+
+
+The input data necessary for the yields to be calculated is inside of the pSIMS_FAO_Data (Shared Dropbox Folder_ http://goo.gl/dBMP0x). All Production and Area Harvested files inside the “pSIMS_FAO_Data/yield inputs” are in CSV and are in yield format (YF). YF is just a clean file version of the extracted data from the website. Some files may have an indication of being TRANSLATED- in that case- they were translated either from Portuguese or French to English. (Google- Translate a document was utilized in all cases). 
+~Before running the scripts, change the directory to the location of the “pSIMS_FAO_Data” folder. The outputs should be identical to current yield files.
+
+The years of data, variation of crops, and the availability of both area and production varied, but the final countries that had any outputs were: Angola, Cameroon, Gambia, Ghana, Guinea Bissau, Kenya, Malawi, Mali, Niger, Rwanda, and Togo. If any yield outputs seem suspicious, then the source of the data itself would be speculative.  
